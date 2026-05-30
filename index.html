@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리 페이지</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f0f13;font-family:'Segoe UI',sans-serif;color:#e0e0e0;padding:40px 20px}
+.wrap{max-width:600px;margin:0 auto}
+h1{font-size:20px;color:#fff;margin-bottom:6px}
+.sub{color:#555;font-size:13px;margin-bottom:32px}
+.section{background:#1a1a24;border:1px solid #2a2a3a;border-radius:12px;padding:24px;margin-bottom:20px}
+.section h2{font-size:14px;color:#aaa;margin-bottom:16px;letter-spacing:.5px}
+.row{display:flex;gap:10px;margin-bottom:10px;align-items:center}
+.row input{flex:1;padding:9px 12px;background:#12121a;border:1px solid #2a2a3a;border-radius:7px;color:#e0e0e0;font-size:13px;outline:none}
+.row input:focus{border-color:#5865f2}
+.row input.url{flex:1.5}
+.del{background:none;border:none;color:#555;cursor:pointer;font-size:18px;padding:4px 8px;border-radius:4px}
+.del:hover{color:#e55;background:#2a1a1a}
+.add-btn{background:none;border:1px dashed #3a3a4a;color:#666;border-radius:7px;padding:9px;width:100%;cursor:pointer;font-size:13px;margin-top:4px}
+.add-btn:hover{border-color:#5865f2;color:#5865f2}
+.save-btn{width:100%;padding:13px;background:#5865f2;border:none;border-radius:8px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px}
+.save-btn:hover{background:#4752c4}
+#toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1e1e2e;border:1px solid #5865f2;color:#fff;padding:12px 24px;border-radius:8px;font-size:13px;display:none;z-index:99}
+.lbl{font-size:11px;color:#555;margin-bottom:4px}
+.cols{display:flex;gap:10px;margin-bottom:4px}
+.cols span{flex:1;font-size:11px;color:#444}
+.cols span.url{flex:1.5}
+#auth-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh}
+.auth-card{background:#1a1a24;border:1px solid #2a2a3a;border-radius:16px;padding:40px;width:320px;text-align:center}
+.auth-card h2{color:#fff;margin-bottom:20px}
+.auth-card input{width:100%;padding:11px 14px;background:#12121a;border:1px solid #2a2a3a;border-radius:8px;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:12px}
+.auth-card input:focus{border-color:#5865f2}
+.auth-card button{width:100%;padding:12px;background:#5865f2;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+#auth-msg{color:#e55;font-size:12px;margin-top:8px}
+</style>
+</head>
+<body>
+
+<!-- 인증 화면 -->
+<div id="auth-wrap">
+  <div class="auth-card">
+    <h2>관리자 인증</h2>
+    <input type="password" id="authPw" placeholder="관리자 비밀번호" onkeydown="if(event.key==='Enter')authCheck()">
+    <button onclick="authCheck()">확인</button>
+    <div id="auth-msg"></div>
+  </div>
+</div>
+
+<!-- 관리 화면 -->
+<div class="wrap" id="main-wrap" style="display:none">
+  <h1>링크 관리</h1>
+  <p class="sub">Firebase에 저장된 링크를 수정합니다</p>
+
+  <!-- 진짜 링크 -->
+  <div class="section">
+    <h2>진짜 링크 (정답 비밀번호)</h2>
+    <div class="cols"><span>텍스트</span><span class="url">URL</span><span style="width:36px"></span></div>
+    <div id="real-list"></div>
+    <button class="add-btn" onclick="addRow('real-list')">+ 링크 추가</button>
+    <button class="save-btn" onclick="saveReal()">저장</button>
+  </div>
+
+  <!-- 가짜 링크 -->
+  <div class="section">
+    <h2>가짜 링크 (ddongssa 입력 시)</h2>
+    <div class="cols"><span>텍스트</span><span class="url">URL</span><span style="width:36px"></span></div>
+    <div id="fake-list"></div>
+    <button class="add-btn" onclick="addRow('fake-list')">+ 링크 추가</button>
+    <button class="save-btn" onclick="saveFake()">저장</button>
+  </div>
+
+  <!-- 힌트 -->
+  <div class="section">
+    <h2>힌트 텍스트</h2>
+    <input type="text" id="hint-val" style="width:100%;padding:9px 12px;background:#12121a;border:1px solid #2a2a3a;border-radius:7px;color:#e0e0e0;font-size:13px;outline:none;margin-bottom:10px" placeholder="힌트 내용">
+    <button class="save-btn" onclick="saveHint()">저장</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const ADMIN_PW = "nered17m"; // 관리자 비밀번호
+
+const fc={apiKey:"AIzaSyA31Gaaq49dVmHY_bTmE4hy-u-KRI_PN0Q",authDomain:"randomforschool-ed149.firebaseapp.com",projectId:"randomforschool-ed149",storageBucket:"randomforschool-ed149.firebasestorage.app",messagingSenderId:"1011973346116",appId:"1:1011973346116:web:71e7a171b39abaf84ffd11"};
+firebase.initializeApp(fc);
+const db = firebase.firestore();
+
+function authCheck(){
+  const pw = document.getElementById('authPw').value;
+  if(pw === ADMIN_PW){
+    document.getElementById('auth-wrap').style.display='none';
+    document.getElementById('main-wrap').style.display='block';
+    loadData();
+  } else {
+    document.getElementById('auth-msg').textContent='비밀번호가 틀렸습니다.';
+  }
+}
+
+function makeRow(listId, text='', url=''){
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.innerHTML = `<input type="text" placeholder="텍스트" value="${text}"><input type="text" class="url" placeholder="https://" value="${url}"><button class="del" onclick="this.parentElement.remove()">×</button>`;
+  document.getElementById(listId).appendChild(row);
+}
+
+function addRow(listId){ makeRow(listId); }
+
+function getRows(listId){
+  return [...document.getElementById(listId).querySelectorAll('.row')].map(r=>{
+    const inputs = r.querySelectorAll('input');
+    return {text: inputs[0].value.trim(), url: inputs[1].value.trim()};
+  }).filter(o=>o.text&&o.url);
+}
+
+async function loadData(){
+  const doc = await db.collection('config').doc('links').get();
+  if(!doc.exists) return;
+  const d = doc.data();
+  document.getElementById('real-list').innerHTML='';
+  document.getElementById('fake-list').innerHTML='';
+  (d.items||[]).forEach(o=>makeRow('real-list', o.text, o.url));
+  (d.fake||[]).forEach(o=>makeRow('fake-list', o.text, o.url));
+  document.getElementById('hint-val').value = d.hint||'';
+}
+
+async function saveReal(){
+  await db.collection('config').doc('links').update({items: getRows('real-list')});
+  toast('진짜 링크 저장 완료!');
+}
+
+async function saveFake(){
+  await db.collection('config').doc('links').update({fake: getRows('fake-list')});
+  toast('가짜 링크 저장 완료!');
+}
+
+async function saveHint(){
+  await db.collection('config').doc('links').update({hint: document.getElementById('hint-val').value});
+  toast('힌트 저장 완료!');
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  setTimeout(()=>{t.style.display='none'},2500);
+}
+
+document.getElementById('authPw').addEventListener('keydown',e=>{if(e.key==='Enter')authCheck()});
+</script>
+</body>
+</html>
