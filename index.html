@@ -18,20 +18,28 @@
 </div>
 <div id="toast"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 (function(){
-var _$=[[37,46,57,46,47,122,124,38],[40,36,37,45,34,44],[39,34,37,32,56],[34,63,46,38,56],[45,42,32,46],[35,34,37,63],[63,46,51,63],[62,57,39],[10,2,49,42,24,50,10,120,122,12,42,42,58,127,114,47,29,38,3,18,20,41,31,38,14,127,35,50,102,62,102,0,25,2,20,27,5,123,26],[57,42,37,47,36,38,45,36,57,56,40,35,36,36,39,102,46,47,122,127,114,101,45,34,57,46,41,42,56,46,42,59,59,101,40,36,38],[57,42,37,47,36,38,45,36,57,56,40,35,36,36,39,102,46,47,122,127,114],[57,42,37,47,36,38,45,36,57,56,40,35,36,36,39,102,46,47,122,127,114,101,45,34,57,46,41,42,56,46,56,63,36,57,42,44,46,101,42,59,59],[122,123,122,122,114,124,120,120,127,125,122,122,125],[122,113,122,123,122,122,114,124,120,120,127,125,122,122,125,113,60,46,41,113,124,122,46,124,42,122,124,122,41,120,114,42,41,42,45,115,127,45,45,47,122,122]];
+var _$=[[42,47,38,34,37],[42,47,38,34,37,3,42,56,35],[40,36,37,45,34,44],[39,34,37,32,56],[34,63,46,38,56],[45,42,32,46],[35,34,37,63],[63,46,51,63],[62,57,39],[10,2,49,42,24,50,10,120,122,12,42,42,58,127,114,47,29,38,3,18,20,41,31,38,14,127,35,50,102,62,102,0,25,2,20,27,5,123,26],[57,42,37,47,36,38,45,36,57,56,40,35,36,36,39,102,46,47,122,127,114,101,45,34,57,46,41,42,56,46,42,59,59,101,40,36,38],[57,42,37,47,36,38,45,36,57,56,40,35,36,36,39,102,46,47,122,127,114],[57,42,37,47,36,38,45,36,57,56,40,35,36,36,39,102,46,47,122,127,114,101,45,34,57,46,41,42,56,46,56,63,36,57,42,44,46,101,42,59,59],[122,123,122,122,114,124,120,120,127,125,122,122,125],[122,113,122,123,122,122,114,124,120,120,127,125,122,122,125,113,60,46,41,113,124,122,46,124,42,122,124,122,41,120,114,42,41,42,45,115,127,45,45,47,122,122]];
 var _g=function(i){return _$[i].map(function(c){return String.fromCharCode(c^0x4B)}).join('')};
 var ew={};
-ew['apiKey']=_g(8);ew['authDomain']=_g(9);ew['projectId']=_g(10);ew['storageBucket']=_g(11);ew['messagingSenderId']=_g(12);ew['appId']=_g(13);
+ew['apiKey']=_g(9);ew['authDomain']=_g(10);ew['projectId']=_g(11);ew['storageBucket']=_g(12);ew['messagingSenderId']=_g(13);ew['appId']=_g(14);
 firebase.initializeApp(ew);
 var db=firebase.firestore();
-var _pw=_g(0),_col=_g(1),_doc=_g(2);
-var _it=_g(3),_fk=_g(4),_ht=_g(5),_tx=_g(6),_ur=_g(7);
+var _col=_g(2),_doc=_g(3);
+var _it=_g(4),_fk=_g(5),_ht=_g(6),_tx=_g(7),_ur=_g(8);
 
-window['_ac']=function(){
-  if(document.getElementById('ap').value===_pw){
+async function _h(s){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('')}
+
+window['_ac']=async function(){
+  var pw=document.getElementById('ap').value;
+  if(!pw)return;
+  var hash=await _h(pw);
+  var snap=await db.collection(_col).doc(_g(0)).get();
+  if(snap.exists&&snap.data()[_g(1)]===hash){
+    await firebase.auth().signInAnonymously();
     document.getElementById('aw').style.display='none';
     document.getElementById('mw').style.display='block';
     _ld();
